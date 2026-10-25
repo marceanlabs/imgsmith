@@ -1,7 +1,9 @@
 # imgsmith
 
-One program to convert, resize, crop and thumbnail images. There is nothing else
-to install.
+[![crates.io](https://img.shields.io/crates/v/imgsmith.svg)](https://crates.io/crates/imgsmith)
+[![ci](https://github.com/marceanlabs/imgsmith/actions/workflows/ci.yml/badge.svg)](https://github.com/marceanlabs/imgsmith/actions/workflows/ci.yml)
+
+Convert, resize, crop and thumbnail images with one file and no other software.
 
 ```console
 $ imgsmith photo.jpg -o photo.webp --width 1920
@@ -12,6 +14,16 @@ imgsmith is a single file. It does not need an image library installed first, a
 plugin folder, or a service running in the background. Copy it onto a machine,
 run it, and it works.
 
+## Table of Contents
+
+- [Install](#install)
+- [Usage](#usage)
+- [What it will not do](#what-it-will-not-do)
+- [Performance](#performance)
+- [Using it from Rust](#using-it-from-rust)
+- [Contributing](#contributing)
+- [Licence](#licence)
+
 ## Install
 
 ```console
@@ -19,10 +31,21 @@ $ cargo install imgsmith
 $ brew install marceanlabs/imgsmith/imgsmith
 ```
 
-Prebuilt binaries for Linux, macOS and Windows are on the
-[releases page](https://github.com/marceanlabs/imgsmith/releases).
+Building from source needs Rust 1.85 or newer. Prebuilt binaries are on the
+[releases page](https://github.com/marceanlabs/imgsmith/releases):
 
-## What it does
+| Platform | Target |
+|---|---|
+| Linux x86_64 | `x86_64-unknown-linux-gnu`, `x86_64-unknown-linux-musl` |
+| Linux arm64 | `aarch64-unknown-linux-gnu` |
+| macOS, Apple silicon | `aarch64-apple-darwin` |
+| macOS, Intel | `x86_64-apple-darwin` |
+| Windows x86_64 | `x86_64-pc-windows-msvc` |
+
+The musl build is a fully static file, so it runs on any Linux distribution
+whatever its C library.
+
+## Usage
 
 | Job | How you ask for it |
 |---|---|
@@ -37,11 +60,14 @@ Prebuilt binaries for Linux, macOS and Windows are on the
 | Read the camera data | `--info` |
 | Rename files by the date taken | `--rename-by-date` |
 
+It reads JPEG, PNG, WebP, TIFF, GIF, BMP, ICO, TGA, PNM, QOI, HDR, OpenEXR and
+farbfeld, and writes all of those plus AVIF.
+
 The work always happens in the same order: turn the photo upright, crop it, resize
 it, rotate it. That order is fixed on purpose, so a crop always refers to the
 photo the way you see it rather than the way the camera happened to save it.
 
-## Reading what a file says about itself
+### Reading what a file says about itself
 
 ```console
 $ imgsmith photo.jpg --info
@@ -54,7 +80,7 @@ shot:  1/250 s  f/4  ISO 400
 gps:   51.507389, -0.127800
 ```
 
-## Renaming by the date the photo was taken
+### Renaming by the date the photo was taken
 
 ```console
 $ imgsmith photos/ --rename-by-date --dry-run
@@ -81,6 +107,14 @@ A file with no date in it is left where it is and reported. imgsmith will not fa
 back to the file's modified time, because a wrong date in a filename is worse than
 no change at all.
 
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | every file was written |
+| 1 | at least one file could not be processed |
+| 2 | the arguments were wrong, so nothing was done |
+
 ## What it will not do
 
 PDF and PostScript are not supported. Those need Ghostscript, and imgsmith
@@ -93,36 +127,20 @@ images, so it stops with a message rather than quietly saving the first frame.
 HEIC and AVIF photos straight from a phone cannot be opened, because they need a C
 decoder. Writing AVIF works.
 
-There are no filters, effects, text or colour management. No plugins, and no
-network access.
-
-## Formats
-
-Reads JPEG, PNG, WebP, TIFF, GIF, BMP, ICO, TGA, PNM, QOI, HDR, OpenEXR and
-farbfeld. Writes all of those plus AVIF.
-
 WebP output is lossless, so `--quality` with WebP is an error rather than a number
 that gets quietly ignored.
 
-## How fast it is
+There are no filters, effects, text or colour management. No plugins, and no
+network access.
 
-Ubuntu 26.04, four cores, one 4032x3024 JPEG, median of three runs, against
-ImageMagick 7.1.2. `scripts/bench.sh` reproduces the table.
+## Performance
 
-| Task | imgsmith | ImageMagick |
-|---|---|---|
-| Resize to 1920 wide | 1.00 s | 1.13 s |
-| Thumbnail 400 | 0.18 s | 0.29 s |
-| JPEG to PNG, 12 megapixels | 6.65 s | 11.80 s |
-| Installed size | one 6.6 MB file | 25 packages, 67 MB |
+On a 12 megapixel JPEG resized to 1920 wide, imgsmith is 11% quicker than
+ImageMagick 7.1.2. The install is where the gap is widest: one 6.6 MB file against
+25 packages and 67 MB.
 
-The table is not all one way, and it is worth saying so. The resize win is 11%.
-Memory use is slightly worse. A JPEG written at the same quality setting comes out
-larger, because imgsmith keeps the full colour detail instead of discarding part
-of it.
-
-What changes is the install: one file against 25 packages, and one piece of code
-reading untrusted files instead of a stack of them.
+The full table, the method, and the two places where it is not the faster tool are
+in [BENCHMARKS.md](BENCHMARKS.md).
 
 ## Using it from Rust
 
@@ -140,8 +158,15 @@ file and renamed into place when it is complete, so an interrupted run cannot
 leave a half written image. Images over 100 megapixels are refused before decoding
 starts.
 
-The test suite runs on every change, and a nightly job feeds the decoder random
-and damaged files to check that it fails safely instead of crashing.
+## Contributing
+
+Questions and bug reports go in the [issues](https://github.com/marceanlabs/imgsmith/issues).
+Please open one before writing a patch: imgsmith is kept small on purpose, so a
+change that makes it do one more thing usually will not be taken, while a change
+that makes it do the same thing correctly will.
+
+Security problems should go through [private reporting](https://github.com/marceanlabs/imgsmith/security/advisories/new)
+rather than a public issue.
 
 ## Licence
 
