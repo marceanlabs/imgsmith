@@ -24,19 +24,12 @@ jobs:
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz --locked
 
-      # Seed with real files so the fuzzer starts inside the parsers instead of
-      # rediscovering magic bytes for an hour. Ubuntu runners ship ImageMagick 6,
-      # where the command is `convert`, not `magick`.
+      # Seeds are committed, so the fuzzer starts inside the parsers instead of
+      # rediscovering magic bytes for an hour, and CI needs no image tooling.
       - name: Seed corpus
         run: |
           mkdir -p fuzz/corpus/decode
-          IM=$(command -v magick || command -v convert)
-          "$IM" -size 64x48 plasma:fractal /tmp/seed.png
-          for ext in jpg webp gif bmp tiff; do "$IM" /tmp/seed.png "/tmp/seed.$ext"; done
-          "$IM" /tmp/seed.png -alpha set /tmp/seed-alpha.png
-          "$IM" /tmp/seed.png -depth 16 /tmp/seed-16.png
-          "$IM" /tmp/seed.png -interlace JPEG /tmp/seed-progressive.jpg
-          cp /tmp/seed.* fuzz/corpus/decode/ || true
+          cp fuzz/seeds/* fuzz/corpus/decode/
           ls -1 fuzz/corpus/decode | wc -l
 
       - name: Fuzz
