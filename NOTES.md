@@ -63,3 +63,17 @@ that date are authored `lumenyr <86650480+lumenyr@users.noreply.github.com>`; ea
 commits keep the old name, because rewriting published history would break every clone
 and every link for no gain. Both crates still list `wlkr73` as the crates.io owner until
 that username is changed at crates.io, which is a separate namespace from GitHub.
+
+## 0.1.4: metadata read, not written
+
+- `--info` and `--rename-by-date`. Read-only, no new dependency, 53 tests.
+- The fixture is built by `scripts/make_exif_fixtures.py`, which writes the TIFF
+  header, three IFDs and their values as bytes and then checks the result with
+  PIL. piexif was tried first and produced a file kamadak-exif rejects with
+  "Unexpected next IFD", so the fixture is built by hand instead.
+- kamadak-exif's `display_value()` hands the date over as `2026-03-01`, while the
+  raw tag holds `2026:03:01`. `format_date` accepts both, because a reader is
+  free to normalise what it shows.
+- `--out` became optional for these two verbs only; a conversion without it is
+  still a usage error, and usage errors now exit 2 rather than 1, which is what
+  the README has always claimed.

@@ -54,6 +54,9 @@ pub use ops::{CropSpec, Fit, Flip, Gravity, orient, parse_crop, target_size};
 /// cannot end up on a different `image` version than this crate.
 pub use image::DynamicImage;
 
+/// Size of an image without decoding its pixels.
+pub use image::image_dimensions;
+
 impl Default for Options {
     fn default() -> Self {
         Options {

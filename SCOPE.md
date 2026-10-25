@@ -291,3 +291,16 @@ about 5,000 crate downloads in the first 90 days, the demand thesis is wrong for
 
 Write the launch surface (README exists), then decide on publishing: the name is free on
 crates.io as of 25 October 2026, and `cargo publish` is the only way to hold it.
+
+## Added after the freeze (0.1.4)
+
+Two verbs joined, and neither touches a pixel: `--info` prints what the file says
+about itself (camera, lens, date, exposure, GPS), and `--rename-by-date` names a
+file after the date it was taken. Both read the same `kamadak-exif` dependency the
+orientation code already used, so the install is unchanged and the binary grew by
+about 20 KB.
+
+They are here rather than in a separate EXIF tool because the audience is the same
+and the alternative is a second binary at zero users. Writing EXIF is still out of
+scope: it needs a writer crate and an in-place rewrite path that re-encodes
+nothing, and nobody has asked for it.

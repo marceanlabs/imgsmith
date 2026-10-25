@@ -30,9 +30,32 @@ Or a prebuilt binary for Linux, macOS or Windows from the
 | Thumbnail | `--thumb` |
 | Batch | a directory as input |
 | Quality | `--quality` |
+| Read the metadata | `--info` |
+| Rename by date taken | `--rename-by-date` |
 
 The order is fixed: orient, crop, resize, rotate. Crop coordinates are always
 pixels of the upright original.
+
+## The metadata it can read
+
+```console
+$ imgsmith photo.jpg --info
+file:  photo.jpg
+size:  4032x3024
+camera: Canon EOS R5
+lens:  RF24-105mm F4 L IS USM
+taken: 2026-03-01 14:22:31
+shot:  1/250 s  f/4  ISO 400
+gps:   51.507389, -0.127800
+
+$ imgsmith photos/ --rename-by-date --dry-run
+would rename photos/IMG_0431.jpg -> photos/2026-03-01_14-22-31.jpg
+```
+
+`--rename-by-date` takes a template: `--date-format "%Y/%m/%d"` would name the
+file after a folder that has to exist, and `%Y%m%d-%H%M` is the six tokens
+supported. A file with no date is left where it is and reported, never renamed
+after its file time, because a wrong date in a name is worse than no change.
 
 ## What it refuses
 

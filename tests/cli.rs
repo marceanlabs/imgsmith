@@ -544,3 +544,126 @@ fn every_single_file_format_round_trips() {
         assert_eq!(dims(&output), (64, 64), "{ext} lost its dimensions");
     }
 }
+
+/// The committed fixture is a JPEG with camera, date, exposure and GPS written as
+/// raw bytes by scripts/make_exif_fixtures.py and checked by PIL.
+fn fixture(name: &str) -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures")
+        .join(name)
+}
+
+#[test]
+fn info_prints_camera_date_and_gps() {
+    let out = run(&[fixture("tagged.jpg").to_str().unwrap(), "--info"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(text.contains("camera: Canon EOS R5"), "{text}");
+    assert!(text.contains("taken: 2026-03-01 14:22:31"), "{text}");
+    assert!(text.contains("f/4"), "{text}");
+    assert!(text.contains("ISO 400"), "{text}");
+    assert!(text.contains("gps:   51.507389, -0.127800"), "{text}");
+    assert!(text.contains("size:  64x48"), "{text}");
+}
+
+#[test]
+fn info_on_a_file_without_metadata_says_none() {
+    let out = run(&[fixture("plain.jpg").to_str().unwrap(), "--info"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(text.contains("exif:  none"), "{text}");
+    assert!(!text.contains("camera:"), "{text}");
+}
+
+#[test]
+fn rename_by_date_names_the_file_after_the_photo() {
+    let dir = workdir("rename");
+    let source = dir.join("IMG_0001.jpg");
+    std::fs::copy(fixture("tagged.jpg"), &source).unwrap();
+
+    let out = run(&[source.to_str().unwrap(), "--rename-by-date"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    assert!(!source.exists(), "the original name should be gone");
+    let renamed = dir.join("2026-03-01_14-22-31.jpg");
+    assert!(renamed.exists(), "expected {renamed:?} to exist");
+
+    // A second photo with the same date must not overwrite the first.
+    let second = dir.join("IMG_0002.jpg");
+    std::fs::copy(fixture("tagged.jpg"), &second).unwrap();
+    let out = run(&[second.to_str().unwrap(), "--rename-by-date"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    assert!(dir.join("2026-03-01_14-22-31-2.jpg").exists());
+    assert!(renamed.exists(), "the first file must survive");
+}
+
+#[test]
+fn rename_by_date_honours_a_template() {
+    let dir = workdir("rename-template");
+    let source = dir.join("shot.jpg");
+    std::fs::copy(fixture("tagged.jpg"), &source).unwrap();
+    let out = run(&[
+        source.to_str().unwrap(),
+        "--rename-by-date",
+        "--date-format",
+        "%Y/%m/%d",
+    ]);
+    // A template with a slash names a directory that does not exist, so the rename
+    // fails and says so rather than quietly writing somewhere else.
+    assert_eq!(out.status.code(), Some(1), "{}", stderr(&out));
+    assert!(
+        source.exists(),
+        "a failed rename must leave the file where it was"
+    );
+    let out = run(&[
+        source.to_str().unwrap(),
+        "--rename-by-date",
+        "--date-format",
+        "photo-%Y%m%d-%H%M",
+    ]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    assert!(dir.join("photo-20260301-1422.jpg").exists());
+}
+
+#[test]
+fn rename_by_date_leaves_a_file_with_no_date_alone() {
+    let dir = workdir("rename-nodate");
+    let source = dir.join("plain.jpg");
+    std::fs::copy(fixture("plain.jpg"), &source).unwrap();
+    let out = run(&[source.to_str().unwrap(), "--rename-by-date"]);
+    assert_eq!(out.status.code(), Some(1), "{}", stderr(&out));
+    assert!(source.exists(), "a file with no date must not move");
+    assert!(stderr(&out).contains("no metadata"), "{}", stderr(&out));
+}
+
+#[test]
+fn rename_dry_run_changes_nothing() {
+    let dir = workdir("rename-dry");
+    let source = dir.join("IMG_0003.jpg");
+    std::fs::copy(fixture("tagged.jpg"), &source).unwrap();
+    let out = run(&[source.to_str().unwrap(), "--rename-by-date", "--dry-run"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    assert!(source.exists(), "nothing may be renamed in a dry run");
+    assert!(stderr(&out).contains("would rename"), "{}", stderr(&out));
+}
+
+#[test]
+fn converting_without_out_is_a_usage_error() {
+    let out = run(&[fixture("plain.jpg").to_str().unwrap(), "--width", "10"]);
+    assert_eq!(out.status.code(), Some(2), "{}", stderr(&out));
+    assert!(
+        stderr(&out).contains("--out is required"),
+        "{}",
+        stderr(&out)
+    );
+}
+
+#[test]
+fn info_and_rename_together_are_refused() {
+    let out = run(&[
+        fixture("tagged.jpg").to_str().unwrap(),
+        "--info",
+        "--rename-by-date",
+    ]);
+    assert_eq!(out.status.code(), Some(2), "{}", stderr(&out));
+    assert!(stderr(&out).contains("pick one"), "{}", stderr(&out));
+}

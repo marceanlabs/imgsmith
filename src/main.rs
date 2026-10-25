@@ -5,7 +5,7 @@ use std::time::Instant;
 use clap::Parser;
 use rayon::prelude::*;
 
-use imgsmith::{Error, Fit, Flip, Format, Gravity, Options, Outcome, parse_crop, process};
+use imgsmith::{Error, Fit, Flip, Format, Gravity, Options, Outcome, meta, parse_crop, process};
 
 /// Image conversion, resizing, cropping and thumbnailing as one static binary.
 ///
@@ -30,9 +30,22 @@ struct Cli {
     #[arg(required = true, value_name = "INPUT")]
     inputs: Vec<PathBuf>,
 
-    /// Output file, or output directory for batches.
-    #[arg(short, long, value_name = "PATH", required = true)]
-    out: PathBuf,
+    /// Output file, or output directory for batches. Required unless --info or
+    /// --rename-by-date is used, which write nothing.
+    #[arg(short, long, value_name = "PATH")]
+    out: Option<PathBuf>,
+
+    /// Print what the file says about itself: camera, lens, date, GPS. Writes nothing.
+    #[arg(long)]
+    info: bool,
+
+    /// Rename each file after the date it was taken. Writes nothing else.
+    #[arg(long)]
+    rename_by_date: bool,
+
+    /// How --rename-by-date spells the new name.
+    #[arg(long, value_name = "TEMPLATE", default_value = "%Y-%m-%d_%H-%M-%S")]
+    date_format: String,
 
     /// Output format, overriding the extension.
     #[arg(short, long, value_enum)]
@@ -123,12 +136,24 @@ fn main() -> ExitCode {
         Ok(code) => code,
         Err(err) => {
             eprintln!("imgsmith: {err}");
-            ExitCode::from(1)
+            // Bad usage is 2, a file that failed is 1: a script can tell the
+            // difference between "you asked for something wrong" and "the file
+            // was wrong".
+            match err {
+                Error::Usage(_) => ExitCode::from(2),
+                _ => ExitCode::from(1),
+            }
         }
     }
 }
 
 fn run(cli: Cli) -> Result<ExitCode, Error> {
+    // Reading metadata and renaming by it touch nothing else, so they run before
+    // the conversion flags are validated: `imgsmith photo.jpg --info` needs none.
+    if cli.info || cli.rename_by_date {
+        return metadata_command(&cli);
+    }
+
     // --- validation, before any file is touched -------------------------
     for (flag, value) in [
         ("--width", cli.width),
@@ -161,6 +186,12 @@ fn run(cli: Cli) -> Result<ExitCode, Error> {
     {
         return Err(Error::Usage("--rotate accepts 90, 180 or 270".into()));
     }
+
+    let Some(out) = cli.out.clone() else {
+        return Err(Error::Usage(
+            "--out is required: give a destination, or use --info or --rename-by-date".into(),
+        ));
+    };
 
     let thumbnail = cli.thumb.is_some();
     let (width, height) = match cli.thumb {
@@ -214,9 +245,9 @@ fn run(cli: Cli) -> Result<ExitCode, Error> {
 
     let out_is_dir = saw_dir
         || files.len() > 1
-        || cli.out.is_dir()
-        || cli.out.to_string_lossy().ends_with('/')
-        || (cli.format.is_some() && cli.out.extension().is_none());
+        || out.is_dir()
+        || out.to_string_lossy().ends_with('/')
+        || (cli.format.is_some() && out.extension().is_none());
 
     if !out_is_dir && files.len() > 1 {
         return Err(Error::Usage(
@@ -230,8 +261,8 @@ fn run(cli: Cli) -> Result<ExitCode, Error> {
         let format = resolve_format(&cli, &input, out_is_dir)?;
         let output = if out_is_dir {
             let mut target = match &relative {
-                Some(rel) => cli.out.join(rel),
-                None => cli.out.join(
+                Some(rel) => out.join(rel),
+                None => out.join(
                     input
                         .file_name()
                         .unwrap_or_else(|| std::ffi::OsStr::new("out")),
@@ -240,7 +271,7 @@ fn run(cli: Cli) -> Result<ExitCode, Error> {
             target.set_extension(format.extension());
             target
         } else {
-            cli.out.clone()
+            out.clone()
         };
         // Quality only means something for lossy formats. Refusing beats
         // accepting a number that changes nothing.
@@ -367,8 +398,11 @@ fn resolve_format(cli: &Cli, input: &Path, out_is_dir: bool) -> Result<Format, E
         return Ok(format);
     }
     if !out_is_dir {
-        if let Some(format) = cli
+        let out = cli
             .out
+            .as_ref()
+            .expect("conversion paths require --out, checked before planning");
+        if let Some(format) = out
             .extension()
             .and_then(|e| e.to_str())
             .and_then(Format::from_extension)
@@ -377,7 +411,7 @@ fn resolve_format(cli: &Cli, input: &Path, out_is_dir: bool) -> Result<Format, E
         }
         return Err(Error::Usage(format!(
             "{}: unknown output extension, name the file .png/.jpg/.webp or pass --format",
-            cli.out.display()
+            out.display()
         )));
     }
     if let Some(format) = input
@@ -391,6 +425,174 @@ fn resolve_format(cli: &Cli, input: &Path, out_is_dir: bool) -> Result<Format, E
         "{}: unknown input extension, pass --format to choose the output format",
         input.display()
     )))
+}
+
+/// `--info` and `--rename-by-date`: read the files, write nothing else.
+fn metadata_command(cli: &Cli) -> Result<ExitCode, Error> {
+    if cli.info && cli.rename_by_date {
+        return Err(Error::Usage(
+            "--info and --rename-by-date do different things; pick one".into(),
+        ));
+    }
+    if let Some(out) = &cli.out {
+        return Err(Error::Usage(format!(
+            "{}: --info and --rename-by-date write nothing, so --out has no meaning here",
+            out.display()
+        )));
+    }
+
+    let mut files = Vec::new();
+    for input in &cli.inputs {
+        if input.is_dir() {
+            let mut found = Vec::new();
+            walk(input, &mut found).map_err(|e| Error::io(input, e))?;
+            if found.is_empty() {
+                return Err(Error::Usage(format!(
+                    "{}: no images found (looked for the formats this tool reads)",
+                    input.display()
+                )));
+            }
+            found.sort();
+            files.extend(found);
+        } else if input.is_file() {
+            files.push(input.clone());
+        } else {
+            return Err(Error::Usage(format!(
+                "{}: no such file or directory",
+                input.display()
+            )));
+        }
+    }
+
+    if cli.info {
+        for path in &files {
+            print_info(path);
+        }
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    let mut renamed = 0usize;
+    let mut failed = 0usize;
+    for path in &files {
+        let Some(tags) = meta::read_tags(path) else {
+            eprintln!(
+                "imgsmith: {}: no metadata, so no date to rename by",
+                path.display()
+            );
+            failed += 1;
+            continue;
+        };
+        let Some(taken) = tags.taken.as_deref() else {
+            eprintln!(
+                "imgsmith: {}: no date taken in the file, left alone",
+                path.display()
+            );
+            failed += 1;
+            continue;
+        };
+        let Some(stamp) = meta::format_date(taken, &cli.date_format) else {
+            eprintln!(
+                "imgsmith: {}: the date {taken:?} is not in a shape this reads",
+                path.display()
+            );
+            failed += 1;
+            continue;
+        };
+        let target = free_name(path, &stamp);
+        if cli.dry_run {
+            eprintln!("would rename {} -> {}", path.display(), target.display());
+            continue;
+        }
+        match std::fs::rename(path, &target) {
+            Ok(()) => renamed += 1,
+            Err(e) => {
+                eprintln!("imgsmith: {}: {e}", path.display());
+                failed += 1;
+            }
+        }
+    }
+
+    if cli.dry_run {
+        eprintln!("{} file(s) planned, nothing renamed", files.len());
+        return Ok(ExitCode::SUCCESS);
+    }
+    if cli.verbose || renamed > 0 {
+        eprintln!("renamed {renamed} file(s)");
+    }
+    if failed > 0 {
+        eprintln!("{failed} file(s) left as they were");
+        return Ok(ExitCode::from(1));
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+/// One block per file, in the order a person asks the questions.
+fn print_info(path: &Path) {
+    println!("file:  {}", path.display());
+    match imgsmith::image_dimensions(path) {
+        Ok((w, h)) => println!("size:  {w}x{h}"),
+        Err(e) => println!("size:  unreadable ({e})"),
+    }
+    let Some(tags) = meta::read_tags(path) else {
+        println!("exif:  none");
+        return;
+    };
+    let camera = match (tags.make.as_deref(), tags.model.as_deref()) {
+        (Some(make), Some(model)) if model.starts_with(make) => model.to_string(),
+        (Some(make), Some(model)) => format!("{make} {model}"),
+        (Some(one), None) | (None, Some(one)) => one.to_string(),
+        (None, None) => String::new(),
+    };
+    if !camera.is_empty() {
+        println!("camera: {camera}");
+    }
+    if let Some(lens) = &tags.lens {
+        println!("lens:  {lens}");
+    }
+    if let Some(taken) = &tags.taken {
+        let readable =
+            meta::format_date(taken, "%Y-%m-%d %H:%M:%S").unwrap_or_else(|| taken.clone());
+        println!("taken: {readable}");
+    }
+    let mut exposure = Vec::new();
+    if let Some(e) = &tags.exposure {
+        exposure.push(e.clone());
+    }
+    if let Some(f) = tags.f_number {
+        exposure.push(format!("f/{f}"));
+    }
+    if let Some(iso) = tags.iso {
+        exposure.push(format!("ISO {iso}"));
+    }
+    if !exposure.is_empty() {
+        println!("shot:  {}", exposure.join("  "));
+    }
+    if let Some((lat, lon)) = tags.gps {
+        println!("gps:   {lat:.6}, {lon:.6}");
+    }
+    if let Some(o) = tags.orientation {
+        println!("upright: orientation {o}");
+    }
+    if let Some(s) = &tags.software {
+        println!("saved by: {s}");
+    }
+}
+
+/// The name asked for, with -2, -3 and so on when something is already there.
+fn free_name(path: &Path, stamp: &str) -> PathBuf {
+    let dir = path.parent().unwrap_or_else(|| Path::new("."));
+    let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("jpg");
+    let candidate = dir.join(format!("{stamp}.{extension}"));
+    if !candidate.exists() {
+        return candidate;
+    }
+    for n in 2..1000 {
+        let next = dir.join(format!("{stamp}-{n}.{extension}"));
+        if !next.exists() {
+            return next;
+        }
+    }
+    candidate
 }
 
 fn walk(dir: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {

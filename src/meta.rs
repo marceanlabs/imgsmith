@@ -109,9 +109,203 @@ pub fn splice_jpeg(encoded: &[u8], segments: &[Vec<u8>]) -> Vec<u8> {
     out
 }
 
+/// What a photo says about itself, in the words a person would use.
+#[derive(Debug, Default, PartialEq)]
+pub struct Tags {
+    pub make: Option<String>,
+    pub model: Option<String>,
+    pub lens: Option<String>,
+    /// EXIF text, "YYYY:MM:DD HH:MM:SS". Left as written, converted on the way out.
+    pub taken: Option<String>,
+    pub software: Option<String>,
+    pub orientation: Option<u8>,
+    pub iso: Option<u32>,
+    pub f_number: Option<f64>,
+    /// Already rendered, as "1/250 s" or "2 s".
+    pub exposure: Option<String>,
+    /// Decimal degrees, north and east positive.
+    pub gps: Option<(f64, f64)>,
+}
+
+impl Tags {
+    pub fn is_empty(&self) -> bool {
+        *self == Tags::default()
+    }
+}
+
+/// Read the tags of a file, or nothing when it carries none.
+pub fn read_tags(path: &Path) -> Option<Tags> {
+    let file = std::fs::File::open(path).ok()?;
+    let mut reader = std::io::BufReader::new(file);
+    let exif = exif::Reader::new().read_from_container(&mut reader).ok()?;
+
+    let text = |tag| {
+        exif.get_field(tag, exif::In::PRIMARY)
+            .map(|f| f.display_value().with_unit(&exif).to_string())
+            .map(|s| s.trim().trim_matches('"').to_string())
+            .filter(|s| !s.is_empty())
+    };
+    let number = |tag| {
+        exif.get_field(tag, exif::In::PRIMARY)
+            .and_then(|f| f.value.get_uint(0))
+    };
+    let rational = |tag| {
+        exif.get_field(tag, exif::In::PRIMARY)
+            .and_then(|f| match f.value {
+                exif::Value::Rational(ref v) if !v.is_empty() => {
+                    Some(v[0].num as f64 / v[0].denom as f64)
+                }
+                _ => None,
+            })
+    };
+
+    let exposure = exif
+        .get_field(exif::Tag::ExposureTime, exif::In::PRIMARY)
+        .and_then(|f| match f.value {
+            exif::Value::Rational(ref v) if !v.is_empty() => {
+                let (num, den) = (v[0].num, v[0].denom);
+                Some(if num == 1 && den > 1 {
+                    format!("1/{den} s")
+                } else if den == 0 {
+                    String::new()
+                } else if num < den {
+                    format!("1/{} s", (den as f64 / num as f64).round() as i64)
+                } else {
+                    format!("{:.1} s", num as f64 / den as f64)
+                })
+            }
+            _ => None,
+        })
+        .filter(|s| !s.is_empty());
+
+    let gps = match (
+        coordinate(&exif, exif::Tag::GPSLatitude),
+        coordinate(&exif, exif::Tag::GPSLongitude),
+    ) {
+        (Some(lat), Some(lon)) => Some((
+            signed(&exif, exif::Tag::GPSLatitudeRef, lat),
+            signed(&exif, exif::Tag::GPSLongitudeRef, lon),
+        )),
+        _ => None,
+    };
+
+    let tags = Tags {
+        make: text(exif::Tag::Make),
+        model: text(exif::Tag::Model),
+        lens: text(exif::Tag::LensModel),
+        taken: text(exif::Tag::DateTimeOriginal).or_else(|| text(exif::Tag::DateTime)),
+        software: text(exif::Tag::Software),
+        orientation: number(exif::Tag::Orientation).map(|v| v as u8),
+        iso: number(exif::Tag::PhotographicSensitivity),
+        f_number: rational(exif::Tag::FNumber),
+        exposure,
+        gps,
+    };
+    if tags.is_empty() { None } else { Some(tags) }
+}
+
+/// Degrees, minutes and seconds as one number.
+fn coordinate(exif: &exif::Exif, tag: exif::Tag) -> Option<f64> {
+    let field = exif.get_field(tag, exif::In::PRIMARY)?;
+    let parts: Vec<f64> = match &field.value {
+        exif::Value::Rational(v) if !v.is_empty() => {
+            v.iter().map(|r| r.num as f64 / r.denom as f64).collect()
+        }
+        _ => return None,
+    };
+    let degrees = parts.first().copied()?;
+    let minutes = parts.get(1).copied().unwrap_or(0.0);
+    let seconds = parts.get(2).copied().unwrap_or(0.0);
+    Some(degrees + minutes / 60.0 + seconds / 3600.0)
+}
+
+fn signed(exif: &exif::Exif, ref_tag: exif::Tag, value: f64) -> f64 {
+    let south_or_west = exif
+        .get_field(ref_tag, exif::In::PRIMARY)
+        .map(|f| {
+            let s = f.display_value().to_string();
+            s.contains('S') || s.contains('W')
+        })
+        .unwrap_or(false);
+    if south_or_west { -value } else { value }
+}
+
+/// Turn "2026:03:01 14:22:31" into the shape a template asks for.
+///
+/// The tokens are the strftime ones people already know, limited to the six that
+/// a date from a photograph needs. An unknown token is left alone rather than
+/// silently dropped, so a typo shows up in the name instead of disappearing.
+pub fn format_date(taken: &str, template: &str) -> Option<String> {
+    let bytes = taken.as_bytes();
+    // The tag holds 2026:03:01, and some readers hand it over already turned into
+    // 2026-03-01. Both are the same date, so both are accepted.
+    let separator = |i: usize| matches!(bytes.get(i), Some(b':') | Some(b'-'));
+    if bytes.len() < 19 || !separator(4) || !separator(7) {
+        return None;
+    }
+    let part = |start: usize, len: usize| -> Option<&str> { taken.get(start..start + len) };
+    let year = part(0, 4)?;
+    let month = part(5, 2)?;
+    let day = part(8, 2)?;
+    let hour = part(11, 2)?;
+    let minute = part(14, 2)?;
+    let second = part(17, 2)?;
+
+    let mut out = String::with_capacity(template.len() + 8);
+    let mut chars = template.chars();
+    while let Some(c) = chars.next() {
+        if c != '%' {
+            out.push(c);
+            continue;
+        }
+        match chars.next() {
+            Some('Y') => out.push_str(year),
+            Some('m') => out.push_str(month),
+            Some('d') => out.push_str(day),
+            Some('H') => out.push_str(hour),
+            Some('M') => out.push_str(minute),
+            Some('S') => out.push_str(second),
+            Some('%') => out.push('%'),
+            Some(other) => {
+                out.push('%');
+                out.push(other);
+            }
+            None => out.push('%'),
+        }
+    }
+    Some(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dates_are_reformatted_from_exif_text() {
+        let taken = "2026:03:01 14:22:31";
+        assert_eq!(
+            format_date(taken, "%Y-%m-%d_%H-%M-%S").as_deref(),
+            Some("2026-03-01_14-22-31")
+        );
+        assert_eq!(
+            format_date(taken, "%Y/%m/%d").as_deref(),
+            Some("2026/03/01")
+        );
+        assert_eq!(
+            format_date(taken, "photo-%Y%m%d-%H%M").as_deref(),
+            Some("photo-20260301-1422")
+        );
+        // An unknown token stays visible, so a typo in the template is not silent.
+        assert_eq!(format_date(taken, "%Y_%q").as_deref(), Some("2026_%q"));
+        // A reader that already normalised the separators is the same date.
+        assert_eq!(
+            format_date("2026-03-01 14:22:31", "%Y-%m-%d_%H-%M-%S").as_deref(),
+            Some("2026-03-01_14-22-31")
+        );
+        // Not a date: no output rather than a garbage name.
+        assert!(format_date("", "%Y").is_none());
+        assert!(format_date("1 Jan 2026", "%Y").is_none());
+    }
 
     #[test]
     fn finds_animation_markers() {
