@@ -83,7 +83,7 @@ Build the tool, not the codecs. Measured on 0.1.1's tree:
 |---|---|---|
 | Packages in the graph | 110 | 70 |
 | Rust lines in dependencies | 1,123,311 | about 552,000 |
-| Release build | 1 m 58 s | 1 m 04 s |
+| Release build, cold | 2 m 05 s | 1 m 30 s |
 | Binary | 5.8 MB | 3.6 MB |
 
 Ours is 2,280 lines. The value of this tool is those 2,280 lines: the order of operations,

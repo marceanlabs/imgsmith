@@ -421,6 +421,7 @@ fn webp_output_is_written_losslessly() {
     );
 }
 
+#[cfg(feature = "avif")]
 #[test]
 fn avif_is_written() {
     let dir = workdir("avifout");

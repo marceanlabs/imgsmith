@@ -70,6 +70,17 @@ uncompressed, because the encoder in use has no compression setting. WebP output
 passing `--quality` with WebP is an error rather than a number that silently
 does nothing.
 
+AVIF output sits behind the default-on `avif` feature. The encoder is 40 crates
+and 571,000 lines, half of this crate's dependency tree, so a library user who
+never writes AVIF can drop it:
+
+```console
+$ cargo install imgsmith --no-default-features   # 70 packages, 3.6 MB binary
+```
+
+Without the feature, `--format avif` fails with a message naming the flag rather
+than writing something unexpected.
+
 ## Metadata
 
 The tool re-encodes pixels and copies only what it can copy correctly.

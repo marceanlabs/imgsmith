@@ -306,6 +306,7 @@ pub fn encode(img: &DynamicImage, fmt: Format, quality: u8, path: &Path) -> Resu
                 .write_image(&data, w, h, ct)
                 .map_err(fail)?;
         }
+        #[cfg(feature = "avif")]
         Format::Avif => {
             let (data, ct) = if img.color().has_alpha() {
                 let rgba = img.to_rgba8();
@@ -317,6 +318,14 @@ pub fn encode(img: &DynamicImage, fmt: Format, quality: u8, path: &Path) -> Resu
             image::codecs::avif::AvifEncoder::new_with_speed_quality(&mut buf, 6, quality)
                 .write_image(&data, w, h, ct)
                 .map_err(fail)?;
+        }
+        #[cfg(not(feature = "avif"))]
+        Format::Avif => {
+            return Err(Error::Unsupported {
+                path: path.to_path_buf(),
+                what: "AVIF output is not compiled into this build; rebuild with --features avif"
+                    .into(),
+            });
         }
         Format::Tiff => {
             let (data, ct) = raw_supported(

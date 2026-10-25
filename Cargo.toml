@@ -1,6 +1,6 @@
 [package]
 name = "imgsmith"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Convert, resize, crop and thumbnail images from one static binary, with no delegates"
 license = "Apache-2.0"
@@ -9,9 +9,30 @@ readme = "README.md"
 keywords = ["image", "convert", "resize", "thumbnail", "cli"]
 categories = ["command-line-utilities", "multimedia::images"]
 
+[features]
+default = ["avif"]
+# The AVIF encoder pulls 40 crates and 571k lines, half the dependency tree.
+# On by default for the binary; library users who do not write AVIF can drop it.
+avif = ["image/avif"]
+
 [dependencies]
 clap = { version = "4.6.7", features = ["derive"] }
-image = "0.25.10"
+image = { version = "0.25.10", default-features = false, features = [
+    "rayon",
+    "png",
+    "jpeg",
+    "webp",
+    "tiff",
+    "gif",
+    "bmp",
+    "ico",
+    "tga",
+    "pnm",
+    "qoi",
+    "hdr",
+    "exr",
+    "ff",
+] }
 kamadak-exif = "0.6.1"
 rayon = "1.12.0"
 
