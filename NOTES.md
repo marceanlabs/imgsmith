@@ -55,3 +55,11 @@ takes.
 
 Benchmark scripts live in `/root/.hermes/cache/scratch/bench/` (`bench.sh`, `batch.sh`,
 `real.sh`) and compare against ImageMagick 7.1.2 installed on this machine.
+
+## Identity
+
+The public account was renamed from `wlkr73` to `lumenyr` on 25 Oct 2026. Commits after
+that date are authored `lumenyr <86650480+lumenyr@users.noreply.github.com>`; earlier
+commits keep the old name, because rewriting published history would break every clone
+and every link for no gain. Both crates still list `wlkr73` as the crates.io owner until
+that username is changed at crates.io, which is a separate namespace from GitHub.
