@@ -95,6 +95,20 @@ Completeness is the easy half. The half that makes an app outlive its author:
    with `--offline` in CI, once a week, forever.
 3. **Reproducible binaries.** Same source, same toolchain, same bytes. Rust makes
    this reachable; it has to be tested, not assumed.
+
+**Enforced since 0.1.4:** `scripts/golden.sh` runs eleven conversions against the
+release binary and compares sha256 with `tests/golden/manifest.txt`. CI runs it on
+Linux x86_64, macOS arm64 and Windows x86_64, so a hash that moves on one
+architecture fails the build. Measured: all eleven agree on all three today,
+including resize, crop, rotate, thumbnail and every encoder we write.
+
+What can still break the promise, and what to do about it:
+
+| Risk | Why it bites | Rule |
+|---|---|---|
+| A dependency bump changes DEFLATE output | PNG bytes change without a line of our code changing | the lock file is part of the contract; bumping `miniz_oxide` is a checked, deliberate act |
+| Float maths differs by CPU | SIMD and FMA round differently on aarch64 | the golden run on three architectures is the alarm; if it fires, that path becomes integer-only |
+| An encoder gains a fast path | codegen change moves the bytes | same alarm, same rule |
 4. **No state.** No config file, no cache directory, no environment variable that
    changes behaviour, no telemetry, no network. A tool whose behaviour depends on
    a hidden file cannot be trusted in a script.
