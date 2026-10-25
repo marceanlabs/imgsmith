@@ -23,3 +23,14 @@ jobs:
       - run: cargo test --all
       - run: cargo test --all --no-default-features
       - run: cargo build --release
+
+      # The promise: the same input and flags produce the same bytes. Hashes are
+      # checked on every operating system, because "it is deterministic here" is
+      # not the claim.
+      - name: Output bytes are unchanged
+        if: runner.os != 'Windows'
+        run: bash scripts/golden.sh
+      - name: Output bytes are unchanged (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: bash scripts/golden.sh

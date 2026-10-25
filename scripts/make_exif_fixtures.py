@@ -143,11 +143,34 @@ def splice_exif(jpeg: bytes, tiff: bytes) -> bytes:
     return jpeg[:2] + segment + jpeg[2:]
 
 
+def pattern(width: int, height: int):
+    """A gradient with a different colour in each corner.
+
+    A solid colour makes rotate, flip and resize produce identical bytes, which
+    hides a broken transform in a golden test. This one moves.
+    """
+    image = Image.new("RGB", (width, height))
+    pixels = image.load()
+    assert pixels is not None
+    for y in range(height):
+        for x in range(width):
+            pixels[x, y] = (
+                (x * 255) // max(1, width - 1),
+                (y * 255) // max(1, height - 1),
+                128,
+            )
+    pixels[0, 0] = (255, 0, 0)
+    pixels[width - 1, 0] = (0, 255, 0)
+    pixels[0, height - 1] = (0, 0, 255)
+    pixels[width - 1, height - 1] = (255, 255, 0)
+    return image
+
+
 def build_tagged() -> Path:
     path = FIX / "tagged.jpg"
     plain = FIX / "plain.jpg"
-    Image.new("RGB", (64, 48), (90, 120, 150)).save(path, "JPEG", quality=90)
-    Image.new("RGB", (32, 32), (200, 200, 200)).save(plain, "JPEG", quality=90)
+    pattern(64, 48).save(path, "JPEG", quality=95)
+    pattern(32, 32).save(plain, "JPEG", quality=95)
     path.write_bytes(splice_exif(path.read_bytes(), build_tiff()))
     return path
 
