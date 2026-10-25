@@ -1,0 +1,21 @@
+[package]
+name = "imgsmith"
+version = "0.1.0"
+edition = "2024"
+description = "Convert, resize, crop and thumbnail images from one static binary, with no delegates"
+license = "Apache-2.0"
+repository = "https://github.com/wlkr73/imgsmith"
+readme = "README.md"
+keywords = ["image", "convert", "resize", "thumbnail", "cli"]
+categories = ["command-line-utilities", "multimedia::images"]
+
+[dependencies]
+clap = { version = "4.6.7", features = ["derive"] }
+image = "0.25.10"
+kamadak-exif = "0.6.1"
+rayon = "1.12.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
