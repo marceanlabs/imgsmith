@@ -1,48 +1,45 @@
-# Giving the company the crate
+# Crate ownership, decided
 
-crates.io has no organisations and no email invites. An owner is a crates.io user
-account, and a crates.io account is created by signing in with GitHub. An organisation
-cannot sign in, so the company needs a GitHub *user* account of its own. That account
-is the only way `imgsmith` can be owned by Marcean Labs rather than by a person.
+**Decision, 25 October 2026: one account, renamed.** No company account. The crate stays
+owned by the personal account, which is renamed to a neutral handle so it carries no name
+trace. A second GitHub user would only add a login to maintain, and GitHub's terms assume
+one account per person.
 
-## What only you can do (five minutes, because of the captcha and the email)
+## The two clicks only you can do
 
-1. **Pick the address.** The account needs an email that is not already on GitHub.
-   `releases@marcean.com` is the right kind of address; do not reuse a personal one.
-2. **Create the GitHub account** at https://github.com/signup with the username
-   **`marceanlabs-release`** (free on GitHub as of 25 Oct 2026) and that address.
-   Verify the email.
-3. **Sign in to crates.io** at https://crates.io with that GitHub account. crates.io
-   creates the account and its username becomes `marceanlabs-release`.
-4. **Tell me it exists.** The next two steps are mine.
+1. **Rename the GitHub account**: github.com/settings/admin → Change username →
+   `lumenrift`. The signup captcha and the settings page sit behind a login I do not have.
+2. **Rename the crates.io account**: crates.io → Settings → username → `lumenrift`.
+   crates.io keeps its own username; renaming GitHub alone leaves the crate page reading
+   `wlkr73`.
 
-Caveat worth knowing: GitHub's terms assume one account per person. A machine account
-for an organisation is normal practice, but it can be flagged, so keep it for releases
-only and do not use it to interact with other people's repos.
+## Why nothing breaks
 
-## What I do once the account exists
+| Thing | Why it survives |
+|---|---|
+| Repos | already under `marceanlabs`, so the rename moves no code |
+| Release assets | served from the org, not the personal account |
+| Git authorship | the noreply address is keyed to the numeric user ID (86650480), not the name |
+| Old links | GitHub redirects the profile and repos while nobody claims `wlkr73` |
+| Crate ownership | ownership follows the account, not the display name |
+
+## After the rename
 
 ```console
-# 1. wlkr73 invites the company as a co-owner (crates.io emails the invite)
-cargo owner --add marceanlabs-release imgsmith
+# local identity, both repos
+git config --global user.name lumenrift
+git config --global user.email 86650480+lumenrift@users.noreply.github.com
 
-# 2. after the invite is accepted, confirm both owners are listed
-curl -s https://crates.io/api/v1/crates/imgsmith/owners \
-  -H 'User-Agent: imgsmith-measure' | jq -r '.users[].login'
-
-# 3. the company account gets its own token, stored outside the repo
-#    (cargo login, then publish as the company for the next release)
+# confirm the old name is still unclaimed, so redirects keep working
+gh api users/wlkr73 --jq .login  # expect 404
 ```
 
-## What this changes
+`imgsmith` and `pdfsurgeon` both have `wlkr73` baked into their published crates.io
+metadata; that corrects itself the next time each is published, and the old URL redirects
+until then.
 
-| Thing | Before | After |
-|---|---|---|
-| Crate owner | wlkr73 | wlkr73 + marceanlabs-release |
-| Who can publish | the personal account | either account |
-| Crate page ownership line | personal | reads as Marcean Labs |
-| Bus factor | one login | two logins, one held by the company |
+## The honest limit
 
-Ownership cannot be transferred away from an account, only shared, so the personal
-account stays listed. That is normal and harmless: the point is that the company is not
-locked out.
+`marcean.com` carries the company number, and Companies House publishes the director of
+Marcean Ltd as WALKER, Adam James. A neutral handle hides the casual link between the
+software and a person, not a determined lookup.
