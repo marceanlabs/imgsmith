@@ -14,6 +14,19 @@ set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
 BIN=target/release/imgsmith
+
+# macOS has shasum and BSD stat; git bash on Windows has neither of the BSD forms.
+hash_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -d' ' -f1
+  else
+    shasum -a 256 "$1" | cut -d' ' -f1
+  fi
+}
+
+size_of() {
+  wc -c < "$1" | tr -d ' '
+}
 MANIFEST=tests/golden/manifest.txt
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/imgsmith-golden.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
@@ -46,8 +59,12 @@ run_case() {
     return 1
   fi
   local sum size
-  sum=$(sha256sum "$written" | cut -d' ' -f1)
-  size=$(stat -c %s "$written")
+  sum=$(hash_file "$written")
+  size=$(size_of "$written")
+  if [ -z "$sum" ]; then
+    echo "FAIL $name: could not hash $written (is there a sha256 tool on this system?)" >&2
+    return 1
+  fi
   printf '%s %s %s\n' "$name" "$sum" "$size"
 }
 
