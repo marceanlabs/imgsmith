@@ -1,6 +1,6 @@
 [package]
 name = "imgsmith"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 description = "Convert, resize, crop and thumbnail images from one static binary, with no delegates"
 license = "Apache-2.0"
