@@ -8,8 +8,8 @@ one account per person.
 ## The two clicks only you can do
 
 1. **Rename the GitHub account**: github.com/settings/admin → Change username →
-   `lumenrift`. The signup captcha and the settings page sit behind a login I do not have.
-2. **Rename the crates.io account**: crates.io → Settings → username → `lumenrift`.
+   `lumenspire`. The signup captcha and the settings page sit behind a login I do not have.
+2. **Rename the crates.io account**: crates.io → Settings → username → `lumenspire`.
    crates.io keeps its own username; renaming GitHub alone leaves the crate page reading
    `wlkr73`.
 
@@ -27,8 +27,8 @@ one account per person.
 
 ```console
 # local identity, both repos
-git config --global user.name lumenrift
-git config --global user.email 86650480+lumenrift@users.noreply.github.com
+git config --global user.name lumenspire
+git config --global user.email 86650480+lumenspire@users.noreply.github.com
 
 # confirm the old name is still unclaimed, so redirects keep working
 gh api users/wlkr73 --jq .login  # expect 404
