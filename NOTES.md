@@ -40,10 +40,18 @@ published crate is verified end to end, not just built locally.
 ## Verification, rerun any time
 
 ```console
-$ cargo test          # 12 unit + 22 end to end
-$ cargo clippy --all-targets
+$ cargo test          # 44 tests: 12 unit, 8 API, 22 end to end, 2 doctests
+$ cargo clippy --all-targets -- -D warnings
 $ cargo build --release
+$ bash scripts/verify_formats.sh ./target/release/imgsmith
+$ python3 scripts/verify_real_world.py ./target/release/imgsmith
+$ bash scripts/measure_downloads.sh
 ```
+
+The Homebrew tap was installed for real on 25 Oct 2026, as a non-root user on this
+machine: `brew install marceanlabs/imgsmith/imgsmith`, then `brew test imgsmith` and a
+conversion through the installed binary. That is the whole path a Mac or Linux user
+takes.
 
 Benchmark scripts live in `/root/.hermes/cache/scratch/bench/` (`bench.sh`, `batch.sh`,
 `real.sh`) and compare against ImageMagick 7.1.2 installed on this machine.
