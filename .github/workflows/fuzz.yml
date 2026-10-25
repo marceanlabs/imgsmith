@@ -1,0 +1,48 @@
+name: fuzz
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds to fuzz
+        default: "900"
+
+permissions:
+  contents: read
+
+jobs:
+  decode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: taiki-e/install-action@cargo-fuzz
+
+      # Seed with real files so the fuzzer starts inside the parsers instead of
+      # rediscovering magic bytes for an hour.
+      - name: Seed corpus
+        run: |
+          mkdir -p fuzz/corpus/decode
+          magick -size 64x48 plasma:fractal /tmp/seed.png
+          for ext in jpg webp gif bmp tiff; do magick /tmp/seed.png "/tmp/seed.$ext"; done
+          magick /tmp/seed.png -alpha set /tmp/seed-alpha.png
+          magick /tmp/seed.png -depth 16 /tmp/seed-16.png
+          magick /tmp/seed.png -interlace JPEG /tmp/seed-progressive.jpg
+          cp /tmp/seed.* fuzz/corpus/decode/ || true
+
+      - name: Fuzz
+        run: cargo fuzz run decode -- -max_total_time=${{ github.event.inputs.seconds || '900' }} -rss_limit_mb=4096
+
+      - name: Keep the crash
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts
+          path: |
+            fuzz/artifacts/
+            crash-*
+            timeout-*
+            oom-*
+          if-no-files-found: ignore
