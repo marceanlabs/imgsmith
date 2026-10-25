@@ -75,6 +75,32 @@ hour not spent removing the reasons nobody can install the eight that exist.
 | 5 | One announcement, once, in the places Rust CLI users read | distribution after it is real, not before |
 | 6 | nixpkgs and AUR submissions | unbounded by notability, unlike homebrew-core |
 
+## Dependency policy, decided 25 October 2026
+
+Build the tool, not the codecs. Measured on 0.1.1's tree:
+
+| Measure | Default build | Without the AVIF encoder |
+|---|---|---|
+| Packages in the graph | 110 | 70 |
+| Rust lines in dependencies | 1,123,311 | about 552,000 |
+| Release build | 1 m 58 s | 1 m 04 s |
+| Binary | 5.8 MB | 3.6 MB |
+
+Ours is 2,280 lines. The value of this tool is those 2,280 lines: the order of operations,
+the geometry, the metadata rules, the batch behaviour, the refusals. Replacing the codecs
+would mean writing parsers for JPEG, PNG, TIFF, HEIC and EXR against the same untrusted
+bytes, with our bugs instead of theirs, and the tool's whole claim is that it is the safer
+option. So: depend on codecs, own the tool.
+
+Prune where it is cheap, though. The AVIF **encoder** is 40 crates and 571,000 lines, half
+the tree, for one output format. It belongs behind a feature flag that is on in the release
+binaries and off by default for anyone using this as a library.
+
+Rules that stay:
+- no C dependencies, no build script that shells out to cmake or a C toolchain
+- `cargo audit` and `cargo deny` in CI, and a committed lockfile
+- any new direct dependency is justified in the commit message by what it replaces
+
 ## Kill tests
 
 Written before the work, so they can be checked without argument later.
