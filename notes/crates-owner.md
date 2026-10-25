@@ -5,13 +5,14 @@ owned by the personal account, which is renamed to a neutral handle so it carrie
 trace. A second GitHub user would only add a login to maintain, and GitHub's terms assume
 one account per person.
 
-## The two clicks only you can do
+## State, 25 October 2026
 
-1. **Rename the GitHub account**: github.com/settings/admin → Change username →
-   `lumenyr`. The signup captcha and the settings page sit behind a login I do not have.
-2. **Rename the crates.io account**: crates.io → Settings → username → `lumenyr`.
-   crates.io keeps its own username; renaming GitHub alone leaves the crate page reading
-   `wlkr73`.
+1. **GitHub account renamed to `lumenyr`** — done. `users/lumenyr` resolves to the same
+   numeric ID (86650480), and `users/wlkr73` returns 404, so old links keep redirecting
+   while the name is unclaimed.
+2. **crates.io username: still `wlkr73`.** crates.io keeps its own username, so the crate
+   page will keep reading `wlkr73` until it is changed at crates.io → Settings → username.
+   Both crates are affected: `imgsmith` and `pdfsurgeon`.
 
 ## Why nothing breaks
 
