@@ -163,6 +163,10 @@ against 1.20 s), which is inside run-to-run noise, 24% faster on a 400 px thumbn
 (0.28 s against 0.37 s), 1.6x faster on JPEG to PNG, and 3.6x on eight files with four
 workers. Speed is not the pitch and must not become one.
 
+**Shipped 25 Oct 2026:** crates.io `imgsmith` 0.1.0 and github.com/wlkr73/imgsmith,
+with a library API added after the first review because the demand evidence (Pillow,
+sharp) was library-shaped, not shell-shaped.
+
 **What is still unproven:** whether anyone downloads it. The kill test stands: under
 about 5,000 crate downloads in the first 90 days, the demand thesis is wrong for a CLI.
 

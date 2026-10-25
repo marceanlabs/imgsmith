@@ -9,9 +9,15 @@ Working directory for the ImageMagick-class Rust CLI. Shipped as `imgsmith` 0.1.
   `meta.rs` (EXIF orientation, JPEG segments, animation detection), `error.rs`.
 - `tests/cli.rs` — 22 end-to-end tests that run the real binary.
 
+## Status, 25 October 2026
+
+Published: crates.io `imgsmith` 0.1.0, repo github.com/wlkr73/imgsmith.
+`cargo install imgsmith` was run from the registry and converted a file, so the
+published crate is verified end to end, not just built locally.
+
 ## Decisions taken during the build
 
-- Name `imgsmith`: free on crates.io on 25 Oct 2026.
+- Name `imgsmith`: was free on crates.io on 25 Oct 2026, now taken by us.
 - AVIF is **output only**. Decoding needs `dav1d`, a C library. Same rule that excluded
   HEIC, applied consistently.
 - WebP is **lossless only**, because no pure-Rust lossy encoder exists. `--quality` with
