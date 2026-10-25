@@ -10,9 +10,13 @@ one account per person.
 1. **GitHub account renamed to `lumenyr`** — done. `users/lumenyr` resolves to the same
    numeric ID (86650480), and `users/wlkr73` returns 404, so old links keep redirecting
    while the name is unclaimed.
-2. **crates.io username: still `wlkr73`.** crates.io keeps its own username, so the crate
-   page will keep reading `wlkr73` until it is changed at crates.io → Settings → username.
-   Both crates are affected: `imgsmith` and `pdfsurgeon`.
+2. **crates.io username renamed to `lumenyr` — done.** `users/lumenyr` now resolves to the
+   same crates.io account (id 445415), `users/wlkr73` returns free, and both `imgsmith` and
+   `pdfsurgeon` list `lumenyr` as owner.
+
+The published metadata still carries `github.com/wlkr73/...` in the `repository` field,
+because that is baked into each published version. Those URLs 301 to the org, so nothing
+is broken, and the next publish of each crate refreshes them.
 
 ## Why nothing breaks
 
