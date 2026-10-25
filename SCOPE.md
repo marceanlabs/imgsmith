@@ -28,7 +28,23 @@ One format gap is worth closing for the same reason, and only one:
 
 | Gap | Evidence | Change |
 |---|---|---|
-| HEIC cannot be read | `pillow-heif` is downloaded **18.6 million times a month**. An iPhone photo is the most likely image a person owns that this tool cannot open | optional `heic` cargo feature linking libheif, **on in the release binaries only**, so the default build stays pure Rust |
+| HEIC cannot be read | `pillow-heif` is downloaded **18.6 million times a month**. An iPhone photo is the most likely image a person owns that this tool cannot open | optional `heic` feature on a **pure-Rust** decoder, so even the feature-enabled build carries no C |
+
+**HEIC, checked 25 October 2026, not assumed.** Two pure-Rust HEIC decoders now exist and
+both opened a real iPhone-format file (1280x854, grid-tiled, `hvc1`) on the first attempt:
+
+| Crate | Version | Result on `libheif/examples/example.heic` | Against ffmpeg |
+|---|---|---|---|
+| `heif-oxide` | 0.1.0 | decoded 1280x854, 8-bit, 3 channels | RMSE 1.49%, mean brightness within 0.003 |
+| `heic-rs` | 0.1.4 | decoded 1280x854, RGB8 | RMSE 1.51%, mean brightness within 0.003 |
+
+Both are 0.1 releases with single-digit GitHub stars, so one file proves they work and is
+not evidence they are ready. The gate before enabling the feature in release binaries is a
+corpus of at least 100 files from several devices, with ffmpeg as the oracle, and a rule
+that a decode failure is an error and never a silently wrong image.
+
+That removes the C dependency question entirely: HEIC is a pure-Rust optional feature or
+it does not ship.
 
 AVIF input and lossy WebP stay out. AVIF as a *source* is still rare relative to HEIC, and
 lossy WebP is covered by writing JPEG, PNG or AVIF instead. Both are one feature flag away
