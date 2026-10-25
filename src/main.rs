@@ -5,14 +5,7 @@ use std::time::Instant;
 use clap::Parser;
 use rayon::prelude::*;
 
-mod error;
-mod img;
-mod meta;
-mod ops;
-
-use error::Error;
-use img::{Format, Options};
-use ops::{Fit, Flip, Gravity, parse_crop};
+use imgsmith::{Error, Fit, Flip, Format, Gravity, Options, Outcome, parse_crop, process};
 
 /// Image conversion, resizing, cropping and thumbnailing as one static binary.
 ///
@@ -299,9 +292,9 @@ fn run(cli: Cli) -> Result<ExitCode, Error> {
         .build()
         .map_err(|e| Error::Usage(format!("could not start {threads} workers: {e}")))?;
 
-    let results: Vec<Result<img::Outcome, Error>> = pool.install(|| {
+    let results: Vec<Result<Outcome, Error>> = pool.install(|| {
         jobs.par_iter()
-            .map(|job| img::process(&job.input, &job.output, job.format, &opts, cli.force))
+            .map(|job| process(&job.input, &job.output, job.format, &opts, cli.force))
             .collect()
     });
 

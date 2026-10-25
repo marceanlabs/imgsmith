@@ -118,6 +118,33 @@ $ cargo install imgsmith
 
 Or from source: `cargo build --release`, the binary is `target/release/imgsmith`.
 
+## Use it as a library
+
+The binary is a thin caller over the same crate.
+
+```rust
+use imgsmith::{process, Format, Options};
+
+let opts = Options { width: Some(1920), ..Options::default() };
+let outcome =
+    process("photo.jpg".as_ref(), "photo.webp".as_ref(), Format::Webp, &opts, false).unwrap();
+println!("{}x{}", outcome.out_dims.0, outcome.out_dims.1);
+```
+
+In memory, without touching the filesystem:
+
+```rust
+use imgsmith::{encodable, transform, DynamicImage, Fit, Format, Options};
+
+let img = DynamicImage::new_rgb8(200, 100);
+let opts = Options { width: Some(100), fit: Fit::Inside, ..Options::default() };
+let small = transform(img, &opts, None).unwrap();
+let png_bytes = encodable(&small, Format::Png).unwrap();
+```
+
+`imgsmith::DynamicImage` is re-exported from `image`, so a caller cannot end up
+on a different version than the crate was built against.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -125,6 +152,18 @@ Or from source: `cargo build --release`, the binary is `target/release/imgsmith`
 | 0 | every file converted |
 | 1 | one or more files failed, the reason is on stderr per file |
 | 2 | bad usage |
+
+## Verified
+
+| Check | Result |
+|---|---|
+| Tests | 44: 12 unit, 8 public API, 22 end-to-end against the binary, 2 doctests |
+| Real camera files | 21 files covering all eight EXIF orientations and five vendors, dimensions and an 8x8 colour grid matched against ImageMagick |
+| Formats | 14 written and 13 read back, every output opened by ImageMagick |
+| Awkward inputs | CMYK, progressive, 16-bit, greyscale and alpha all convert; a corrupted file is refused with a named error |
+
+Both checks are in the repo and run against the release binary:
+`scripts/verify_formats.sh` and `scripts/verify_real_world.py`.
 
 ## Licence
 

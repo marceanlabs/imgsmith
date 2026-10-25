@@ -47,6 +47,14 @@ impl Format {
         }
     }
 
+    /// The quality used when the caller does not set one.
+    pub fn default_quality(self) -> u8 {
+        match self {
+            Format::Avif => 80,
+            _ => 85,
+        }
+    }
+
     pub fn from_extension(ext: &str) -> Option<Format> {
         match ext.to_ascii_lowercase().as_str() {
             "png" => Some(Format::Png),
@@ -436,6 +444,14 @@ fn u16_ne_bytes(samples: &[u16]) -> Vec<u8> {
         out.extend_from_slice(&sample.to_ne_bytes());
     }
     out
+}
+
+/// Encode in memory, with no file path needed for context.
+///
+/// Uses the format's default quality. For an explicit quality or a better error
+/// message, call [`encode`].
+pub fn encodable(img: &DynamicImage, fmt: Format) -> Result<Vec<u8>, Error> {
+    encode(img, fmt, fmt.default_quality(), Path::new("(memory)"))
 }
 
 /// Full pipeline for one file.
