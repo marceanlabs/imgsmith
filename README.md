@@ -125,9 +125,12 @@ untrusted bytes.
 
 ```console
 $ cargo install imgsmith
+$ brew install marceanlabs/imgsmith/imgsmith
 ```
 
-Or from source: `cargo build --release`, the binary is `target/release/imgsmith`.
+Or download a prebuilt binary for Linux, macOS or Windows from the
+[releases page](https://github.com/marceanlabs/imgsmith/releases), or build from
+source with `cargo build --release`.
 
 ## Use it as a library
 

@@ -11,7 +11,7 @@ Working directory for the ImageMagick-class Rust CLI. Shipped as `imgsmith` 0.1.
 
 ## Status, 25 October 2026
 
-Published: crates.io `imgsmith` 0.1.0, repo github.com/wlkr73/imgsmith. The live plan is
+Published: crates.io `imgsmith` 0.1.1, repo github.com/marceanlabs/imgsmith (Marcean Labs). The live plan is
 the refined scope at the top of `SCOPE.md`: distribution, not features.
 `cargo install imgsmith` was run from the registry and converted a file, so the
 published crate is verified end to end, not just built locally.
