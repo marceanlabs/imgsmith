@@ -18,22 +18,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
-      - uses: taiki-e/install-action@cargo-fuzz
+
+      # Installed with the stable cargo: cargo-fuzz compiles fine there and is
+      # invoked below through the nightly toolchain, which it needs to fuzz.
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
 
       # Seed with real files so the fuzzer starts inside the parsers instead of
-      # rediscovering magic bytes for an hour.
+      # rediscovering magic bytes for an hour. Ubuntu runners ship ImageMagick 6,
+      # where the command is `convert`, not `magick`.
       - name: Seed corpus
         run: |
           mkdir -p fuzz/corpus/decode
-          magick -size 64x48 plasma:fractal /tmp/seed.png
-          for ext in jpg webp gif bmp tiff; do magick /tmp/seed.png "/tmp/seed.$ext"; done
-          magick /tmp/seed.png -alpha set /tmp/seed-alpha.png
-          magick /tmp/seed.png -depth 16 /tmp/seed-16.png
-          magick /tmp/seed.png -interlace JPEG /tmp/seed-progressive.jpg
+          IM=$(command -v magick || command -v convert)
+          "$IM" -size 64x48 plasma:fractal /tmp/seed.png
+          for ext in jpg webp gif bmp tiff; do "$IM" /tmp/seed.png "/tmp/seed.$ext"; done
+          "$IM" /tmp/seed.png -alpha set /tmp/seed-alpha.png
+          "$IM" /tmp/seed.png -depth 16 /tmp/seed-16.png
+          "$IM" /tmp/seed.png -interlace JPEG /tmp/seed-progressive.jpg
           cp /tmp/seed.* fuzz/corpus/decode/ || true
+          ls -1 fuzz/corpus/decode | wc -l
 
       - name: Fuzz
-        run: cargo fuzz run decode -- -max_total_time=${{ github.event.inputs.seconds || '900' }} -rss_limit_mb=4096
+        run: cargo +nightly fuzz run decode -- -max_total_time=${{ github.event.inputs.seconds || '900' }} -rss_limit_mb=4096
 
       - name: Keep the crash
         if: failure()
