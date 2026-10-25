@@ -1,6 +1,17 @@
 # Moving imgsmith under Marcean Labs
 
-Decided 25 October 2026. Handle `marceanlabs` is taken by someone else, `marcean-labs` is
+**Done 25 October 2026.** The organisation already existed as `marceanlabs`, so the
+transfer was a single API call. What is now true:
+
+| Thing | State |
+|---|---|
+| Repo | `marceanlabs/imgsmith`, old `wlkr73` URLs 301 to it |
+| Release v0.1.1 assets | six files, still downloadable after the transfer |
+| Homebrew tap | `marceanlabs/homebrew-imgsmith`, `brew install marceanlabs/imgsmith/imgsmith` |
+| Cargo.toml `repository` | points at the org in source; crates.io metadata updates on the next publish |
+| crates.io owner | still `wlkr73`; crates.io has no organisations, so company ownership needs a second user account |
+
+The steps below are kept as the record of what was decided and why. Handle `marceanlabs` is taken by someone else, `marcean-labs` is
 free, so the organisation is **Marcean Labs** with handle **marcean-labs**.
 
 ## The one step that cannot be automated
