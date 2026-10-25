@@ -84,7 +84,7 @@ Build the tool, not the codecs. Measured on 0.1.1's tree:
 | Packages in the graph | 110 | 70 |
 | Rust lines in dependencies | 1,123,311 | about 552,000 |
 | Release build, cold | 2 m 05 s | 1 m 30 s |
-| Binary | 5.8 MB | 3.6 MB |
+| Binary | 6.6 MB | 4.3 MB |
 
 Ours is 2,280 lines. The value of this tool is those 2,280 lines: the order of operations,
 the geometry, the metadata rules, the batch behaviour, the refusals. Replacing the codecs
@@ -251,7 +251,7 @@ Written before the build, so it can be checked honestly later.
 
 ## What shipped, 25 October 2026
 
-`imgsmith` 0.1.0, 34 tests, clippy clean, release binary 5.8 MB. Everything below is
+`imgsmith` 0.1.4, 53 tests, clippy clean, release binary 6.6 MB. Everything below is
 measured, not intended.
 
 **All eight in-scope operations exist** and are covered by end-to-end tests against the

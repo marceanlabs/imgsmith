@@ -78,7 +78,7 @@ Ubuntu 26.04, four cores, a 4032x3024 JPEG, median of three, against ImageMagick
 | Resize to 1920 wide | 1.00 s | 1.13 s |
 | Thumbnail 400 | 0.18 s | 0.29 s |
 | JPEG to PNG, 12 MP | 6.65 s | 11.80 s |
-| Footprint | 5.8 MB binary | 25 packages, 67 MB |
+| Footprint | 6.6 MB binary | 25 packages, 67 MB |
 
 Speed is not the pitch. The resize margin is 11%, memory use is slightly worse,
 and JPEG output at the same quality number is about half as large again because
