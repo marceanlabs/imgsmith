@@ -136,9 +136,7 @@ pub fn target_size(
     };
     if !allow_upscale {
         // Never enlarge: the scale is capped at 1.0, not merely clipped to the box.
-        let scale = (w as f64 / sw as f64)
-            .min(h as f64 / sh as f64)
-            .min(1.0);
+        let scale = (w as f64 / sw as f64).min(h as f64 / sh as f64).min(1.0);
         (round(scale * sw as f64), round(scale * sh as f64))
     } else {
         (w.max(1), h.max(1))

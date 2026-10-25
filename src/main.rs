@@ -12,7 +12,7 @@ mod ops;
 
 use error::Error;
 use img::{Format, Options};
-use ops::{parse_crop, Fit, Flip, Gravity};
+use ops::{Fit, Flip, Gravity, parse_crop};
 
 /// Image conversion, resizing, cropping and thumbnailing as one static binary.
 ///
@@ -137,7 +137,11 @@ fn main() -> ExitCode {
 
 fn run(cli: Cli) -> Result<ExitCode, Error> {
     // --- validation, before any file is touched -------------------------
-    for (flag, value) in [("--width", cli.width), ("--height", cli.height), ("--thumb", cli.thumb)] {
+    for (flag, value) in [
+        ("--width", cli.width),
+        ("--height", cli.height),
+        ("--thumb", cli.thumb),
+    ] {
         if value == Some(0) {
             return Err(Error::Usage(format!("{flag} must be greater than zero")));
         }

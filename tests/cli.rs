@@ -220,7 +220,11 @@ fn auto_orient_applies_and_drops_the_tag() {
         "--auto-orient",
     ]);
     assert!(out.status.success(), "{}", stderr(&out));
-    assert_eq!(dims(&output), (100, 200), "orientation 6 is a 90 degree turn");
+    assert_eq!(
+        dims(&output),
+        (100, 200),
+        "orientation 6 is a 90 degree turn"
+    );
     assert!(!has_app1(&output), "the orientation tag must not survive");
 }
 
@@ -530,14 +534,12 @@ fn every_single_file_format_round_trips() {
     }
     img.save(&input).unwrap();
 
-    for ext in ["png", "jpg", "webp", "tiff", "gif", "bmp", "tga", "pnm", "qoi"] {
+    for ext in [
+        "png", "jpg", "webp", "tiff", "gif", "bmp", "tga", "pnm", "qoi", "ff", "hdr", "exr", "ico",
+    ] {
         let output = dir.join(format!("out.{ext}"));
         let out = run(&[input.to_str().unwrap(), "-o", output.to_str().unwrap()]);
-        assert!(
-            out.status.success(),
-            "{ext} failed: {}",
-            stderr(&out)
-        );
+        assert!(out.status.success(), "{ext} failed: {}", stderr(&out));
         assert_eq!(dims(&output), (64, 64), "{ext} lost its dimensions");
     }
 }

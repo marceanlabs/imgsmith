@@ -66,7 +66,6 @@ impl Format {
             _ => None,
         }
     }
-
 }
 
 #[derive(Clone, Debug)]
@@ -223,7 +222,10 @@ fn color_type(img: &DynamicImage) -> ExtendedColorType {
 }
 
 /// Native bytes when the format accepts them, otherwise RGBA8.
-fn raw_supported(img: &DynamicImage, allowed: &[ExtendedColorType]) -> (Vec<u8>, ExtendedColorType) {
+fn raw_supported(
+    img: &DynamicImage,
+    allowed: &[ExtendedColorType],
+) -> (Vec<u8>, ExtendedColorType) {
     let native = color_type(img);
     if allowed.contains(&native) {
         (img.as_bytes().to_vec(), native)
@@ -247,12 +249,7 @@ fn flatten_white(img: &DynamicImage) -> image::RgbImage {
     out
 }
 
-pub fn encode(
-    img: &DynamicImage,
-    fmt: Format,
-    quality: u8,
-    path: &Path,
-) -> Result<Vec<u8>, Error> {
+pub fn encode(img: &DynamicImage, fmt: Format, quality: u8, path: &Path) -> Result<Vec<u8>, Error> {
     let mut buf: Vec<u8> = Vec::new();
     let (w, h) = (img.width(), img.height());
     let fail = |e: image::ImageError| Error::image(path, e);
@@ -361,10 +358,8 @@ pub fn encode(
                 .map_err(fail)?;
         }
         Format::Tga => {
-            let (data, ct) = raw_supported(
-                img,
-                &[ExtendedColorType::Rgb8, ExtendedColorType::Rgba8],
-            );
+            let (data, ct) =
+                raw_supported(img, &[ExtendedColorType::Rgb8, ExtendedColorType::Rgba8]);
             image::codecs::tga::TgaEncoder::new(&mut buf)
                 .write_image(&data, w, h, ct)
                 .map_err(fail)?;
@@ -377,10 +372,8 @@ pub fn encode(
                 .map_err(fail)?;
         }
         Format::Qoi => {
-            let (data, ct) = raw_supported(
-                img,
-                &[ExtendedColorType::Rgb8, ExtendedColorType::Rgba8],
-            );
+            let (data, ct) =
+                raw_supported(img, &[ExtendedColorType::Rgb8, ExtendedColorType::Rgba8]);
             image::codecs::qoi::QoiEncoder::new(&mut buf)
                 .write_image(&data, w, h, ct)
                 .map_err(fail)?;
@@ -400,9 +393,15 @@ pub fn encode(
         }
         Format::Exr => {
             let (bytes, ct) = if img.color().has_alpha() {
-                (f32_ne_bytes(img.to_rgba32f().as_raw()), ExtendedColorType::Rgba32F)
+                (
+                    f32_ne_bytes(img.to_rgba32f().as_raw()),
+                    ExtendedColorType::Rgba32F,
+                )
             } else {
-                (f32_ne_bytes(img.to_rgb32f().as_raw()), ExtendedColorType::Rgb32F)
+                (
+                    f32_ne_bytes(img.to_rgb32f().as_raw()),
+                    ExtendedColorType::Rgb32F,
+                )
             };
             let mut cursor = std::io::Cursor::new(&mut buf);
             image::codecs::openexr::OpenExrEncoder::new(&mut cursor)
