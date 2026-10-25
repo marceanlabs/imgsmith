@@ -158,10 +158,10 @@ parallel workers, quality, and `--strip`.
    use less memory is wrong; the decompression-bomb guard is what actually protects the
    machine.
 
-**Performance, honestly:** 10% faster than ImageMagick 7.1.2 on a 12 MP resize (1.08 s
-against 1.20 s), 29% faster on a 400 px thumbnail (0.26 s against 0.37 s), 1.6x faster
-on JPEG to PNG, and 3.6x on eight files with four workers. Speed is not the pitch and
-must not become one.
+**Performance, honestly:** 7% faster than ImageMagick 7.1.2 on a 12 MP resize (1.12 s
+against 1.20 s), which is inside run-to-run noise, 24% faster on a 400 px thumbnail
+(0.28 s against 0.37 s), 1.6x faster on JPEG to PNG, and 3.6x on eight files with four
+workers. Speed is not the pitch and must not become one.
 
 **What is still unproven:** whether anyone downloads it. The kill test stands: under
 about 5,000 crate downloads in the first 90 days, the demand thesis is wrong for a CLI.

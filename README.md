@@ -97,16 +97,17 @@ of three runs, ImageMagick 7.1.2 Q16 for comparison.
 
 | Task | imgsmith | ImageMagick |
 |---|---|---|
-| Resize to 1920 wide, quality 85 | 1.08 s, 592 KB | 1.20 s, 583 KB |
-| Thumbnail 400 | 0.26 s | 0.37 s |
-| JPEG to PNG, 12 MP | 5.23 s, 18.5 MB | 8.37 s, 16.9 MB |
+| Resize to 1920 wide, quality 85 | 1.12 s, 592 KB | 1.20 s, 583 KB |
+| Thumbnail 400 | 0.28 s | 0.37 s |
+| JPEG to PNG, 12 MP | 5.3 s, 18.5 MB | 8.4 s, 16.9 MB |
 | Eight files to 1600 wide | 2.07 s with 4 workers, 7.48 s with 1 | not measured |
 | Program start (`--version`) | 5 ms | 10 ms |
 | Peak memory, 12 MP resize | 145 MB | 132 MB |
 | Footprint | 5.8 MB binary, links libc, libm and libgcc | 25 packages, 67 MB |
 
-Speed is not the pitch. The differences above are small and memory use is
-slightly worse. What changes is what has to be installed and what code parses
+Speed is not the pitch. The resize margin is about 7%, which is inside
+run-to-run noise on this machine, the thumbnail margin is about 25%, and memory
+use is slightly worse. What changes is what has to be installed and what code parses
 untrusted bytes.
 
 ## Install
