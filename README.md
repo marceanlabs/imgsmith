@@ -103,23 +103,35 @@ The tool re-encodes pixels and copies only what it can copy correctly.
 
 ## Measured
 
-Ubuntu 26.04, 4 cores, a 4032x3024 JPEG (3.8 MB) from `plasma:fractal`, median
-of three runs, ImageMagick 7.1.2 Q16 for comparison.
+Ubuntu 26.04, four cores, a 4032x3024 JPEG from a seeded `plasma:fractal` so the
+source file is byte identical on every run, median of three runs, ImageMagick
+7.1.2 Q16 for comparison. Measured 25 October 2026 against imgsmith 0.1.1.
 
 | Task | imgsmith | ImageMagick |
 |---|---|---|
-| Resize to 1920 wide, quality 85 | 1.12 s, 592 KB | 1.20 s, 583 KB |
-| Thumbnail 400 | 0.28 s | 0.37 s |
-| JPEG to PNG, 12 MP | 5.3 s, 18.5 MB | 8.4 s, 16.9 MB |
-| Eight files to 1600 wide | 2.07 s with 4 workers, 7.48 s with 1 | not measured |
-| Program start (`--version`) | 5 ms | 10 ms |
-| Peak memory, 12 MP resize | 145 MB | 132 MB |
-| Footprint | 5.8 MB binary, links libc, libm and libgcc | 25 packages, 67 MB |
+| Resize to 1920 wide, quality 85 | 1.00 s, 556 KB | 1.13 s, 364 KB |
+| Thumbnail 400 | 0.18 s | 0.29 s |
+| JPEG to PNG, 12 MP | 6.65 s, 15.0 MB | 11.80 s, 14.0 MB |
+| Eight files to 1600 wide | 1.81 s with 4 workers, 6.65 s with 1 | not measured |
+| Program start (`--version`) | 18 ms | 28 ms |
+| Peak memory, 12 MP resize | 138 MB | 128 MB |
+| Footprint | 5.8 MB binary, links libc, libm and libgcc | 25 packages, 67 MB on a clean Ubuntu (see below) |
 
-Speed is not the pitch. The resize margin is about 7%, which is inside
-run-to-run noise on this machine, the thumbnail margin is about 25%, and memory
-use is slightly worse. What changes is what has to be installed and what code parses
-untrusted bytes.
+`scripts/bench.sh` regenerates that table; a number that cannot be reproduced
+by running it does not belong here. The ImageMagick footprint is the dependency
+closure of `apt-get -s install imagemagick` on a clean 26.04, measured before
+ImageMagick was installed on this machine; on a box that already has it the
+closure reads higher and is not comparable.
+
+Two things in that table need saying plainly:
+
+- **JPEG output at the same quality number is larger, by about half on this
+  image.** imgsmith writes 4:4:4 chroma, ImageMagick writes 4:2:0 at quality 85,
+  so the file keeps full colour resolution and costs bytes. There is no flag to
+  choose subsampling in this version.
+- **Speed is not the pitch.** The resize margin is 11%, the thumbnail margin is
+  38%, PNG is 44% faster but 7% larger, and memory use is slightly worse. What
+  changes is what has to be installed and what code parses untrusted bytes.
 
 ## Install
 
