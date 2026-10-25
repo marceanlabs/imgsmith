@@ -175,9 +175,31 @@ on a different version than the crate was built against.
 | Real camera files | 21 files covering all eight EXIF orientations and five vendors, dimensions and an 8x8 colour grid matched against ImageMagick |
 | Formats | 14 written and 13 read back, every output opened by ImageMagick |
 | Awkward inputs | CMYK, progressive, 16-bit, greyscale and alpha all convert; a corrupted file is refused with a named error |
+| Fuzzing | `cargo +nightly fuzz run decode`, seeded from six real formats, run nightly in CI |
 
 Both checks are in the repo and run against the release binary:
 `scripts/verify_formats.sh` and `scripts/verify_real_world.py`.
+
+## Fuzzing
+
+Every byte the tool reads is a file from somewhere untrusted, so the decode path
+is fuzzed rather than only tested:
+
+```console
+$ cargo install cargo-fuzz          # once, plus: rustup toolchain install nightly
+$ mkdir -p fuzz/corpus/decode && cp fuzz/seeds/* fuzz/corpus/decode/
+$ cargo +nightly fuzz run decode -- -max_total_time=900
+```
+
+The target writes the input to a file and then takes the same path the binary
+takes: format sniffing, decode, the EXIF and animation probes, one thumbnail
+transform, three encoders. Seeds in `fuzz/seeds/` are real PNG, JPEG, GIF, BMP,
+WebP and TIFF files, so the fuzzer starts inside the parsers.
+
+`.github/workflows/fuzz.yml` runs it for fifteen minutes a night and uploads the
+crashing input as a build artefact when one is found. A crash is not a proof of a
+bug in this crate: the parsers come from `image`, so the first step is to
+reproduce it, `cargo fuzz tmin` it, and report it upstream if the fault is theirs.
 
 ## Licence
 
