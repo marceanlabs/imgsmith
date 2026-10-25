@@ -1,9 +1,84 @@
-# Image CLI — scope decision
+# imgsmith — scope
 
-Written 25 October 2026. Evidence gathered the same day, all figures measured or pulled
-from the source API in this session, not quoted from blogs.
+Refined 25 October 2026, after 0.1.0 shipped. The sections below the horizontal rule are
+the first pass, kept as provenance: they chose *what to build*. This section chooses
+*what to do next*, which is a different question now that the tool exists.
 
-Working name: not chosen yet. Directory: `/root/work/imgtool/`.
+## The goal, in one measurable sentence
+
+Make imgsmith the tool a developer reaches for instead of ImageMagick, measured only by
+use: **5,000 crate downloads and 10,000 release-binary downloads in 90 days, and at least
+one issue filed by someone nobody here knows.** Free tools earn nothing, so adoption is
+the only thing that can be true or false.
+
+That date is 23 January 2027.
+
+## What the evidence says is missing
+
+Features are not the constraint. The tool does the eight operations, on 14 formats, with
+44 passing tests and verified orientation handling. Three things stop a real user:
+
+| Blocker | Evidence | Change |
+|---|---|---|
+| No prebuilt binaries | oxipng, the nearest comparable Rust image CLI, took **136,684 binary downloads across its last three releases**, and `cargo install` is the only way to get imgsmith today | build six targets on release: linux gnu + musl, macOS arm64 + x86_64, Windows msvc + aarch64 |
+| No package manager | oxipng, resvg and ImageMagick are all in Homebrew; imgsmith is in nothing | own Homebrew tap, `cargo-binstall` compatible release names, then nixpkgs and AUR |
+| Windows never compiled | Windows was the **largest platform in oxipng's newest release (8,054 downloads against 3,614 for both macOS builds combined)** and this crate has never been built for it | a Windows job in CI before the first release |
+
+One format gap is worth closing for the same reason, and only one:
+
+| Gap | Evidence | Change |
+|---|---|---|
+| HEIC cannot be read | `pillow-heif` is downloaded **18.6 million times a month**. An iPhone photo is the most likely image a person owns that this tool cannot open | optional `heic` cargo feature linking libheif, **on in the release binaries only**, so the default build stays pure Rust |
+
+AVIF input and lossy WebP stay out. AVIF as a *source* is still rare relative to HEIC, and
+lossy WebP is covered by writing JPEG, PNG or AVIF instead. Both are one feature flag away
+if the download data says otherwise.
+
+## Scope after refinement
+
+| In | Out |
+|---|---|
+| The eight operations, frozen | any ninth operation, including filters, drawing, collage, compare |
+| Six prebuilt targets + installers | a GUI, a TUI, a server or a hosted API |
+| Optional `heic` decode in releases | HEIC **output**, AVIF input, lossy WebP |
+| Windows build and test in CI | PDF, PostScript, SVG, animation (unchanged) |
+| Benchmark and format scripts run in CI | colour management, ICC transforms |
+| Documentation that leads with refusals | monetising the tool; it is free and stays free |
+
+The operations list does not grow this quarter. Every hour spent on a ninth verb is an
+hour not spent removing the reasons nobody can install the eight that exist.
+
+## Order of work
+
+| # | Work | Why it is in this position |
+|---|---|---|
+| 1 | Release workflow, six targets, `--version` smoke test on each | without this, nothing else can be measured |
+| 2 | Windows CI job (build + tests) | the biggest binary audience, currently untested |
+| 3 | Homebrew tap and `cargo-binstall` naming | the two cheapest install paths for CLI users |
+| 4 | `heic` feature, enabled in the release builds only | the most likely first file a real user has |
+| 5 | One announcement, once, in the places Rust CLI users read | distribution after it is real, not before |
+| 6 | nixpkgs and AUR submissions | unbounded by notability, unlike homebrew-core |
+
+## Kill tests
+
+Written before the work, so they can be checked without argument later.
+
+1. **90 days: under 5,000 crate downloads and under 10,000 binary downloads.** The tool is
+   not finding users. Stop writing code, write the post-mortem on distribution, and decide
+   whether the free-tools thesis is wrong.
+2. **90 days: no issue from a stranger.** Downloads without questions means CI mirrors and
+   drive-by installs, not users. Treat the adoption number as inflated.
+3. **HEIC-enabled binaries exceed 40% of downloads.** Purity is not what users want; move
+   HEIC to default and revisit AVIF input on the same reasoning.
+4. **Windows binaries are under 10% of downloads.** Then drop Windows from the release
+   matrix rather than carrying a platform nobody uses.
+
+---
+
+# First pass, 25 October 2026: choosing what to build
+
+Evidence gathered the same day, all figures measured or pulled from the source API in that
+session, not quoted from blogs. Directory: `/root/work/imgtool/`.
 
 ## Verdict
 
