@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 /// Every failure names the file it happened to, so a batch run is diagnosable
 /// from its output alone.
+#[non_exhaustive]
 #[derive(Debug)]
 pub enum Error {
     Io {

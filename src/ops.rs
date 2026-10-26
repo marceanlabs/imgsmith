@@ -5,6 +5,7 @@
 
 use clap::ValueEnum;
 
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum Fit {
     /// Exact size. Aspect ratio is not preserved.
@@ -17,6 +18,7 @@ pub enum Fit {
     Cover,
 }
 
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum Gravity {
     Centre,
@@ -30,6 +32,7 @@ pub enum Gravity {
     SouthWest,
 }
 
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum Flip {
     /// Mirror left to right.
@@ -38,6 +41,7 @@ pub enum Flip {
     V,
 }
 
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CropSpec {
     pub width: u32,
@@ -104,6 +108,7 @@ pub fn parse_crop(raw: &str) -> Result<CropSpec, String> {
 ///
 /// `allow_upscale == false` clamps the result to the source size, which is what
 /// thumbnailing wants and what a resize usually does not.
+#[must_use]
 pub fn target_size(
     src: (u32, u32),
     want: (Option<u32>, Option<u32>),
@@ -187,6 +192,7 @@ pub fn crop_rect(
 ///
 /// 1 is already upright. 2-8 are the mirrored and rotated cases; 5 and 7 are
 /// the two transposes, which are a rotation plus a mirror.
+#[must_use]
 pub fn orient(img: image::DynamicImage, orientation: u8) -> image::DynamicImage {
     match orientation {
         2 => img.fliph(),
@@ -206,6 +212,7 @@ fn round(v: f64) -> u32 {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, reason = "tests may panic on a failed assertion")]
     use super::*;
 
     #[test]

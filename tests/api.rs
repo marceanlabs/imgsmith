@@ -3,6 +3,8 @@
 //! If this file does not compile, the crate is not a library no matter what the
 //! README says.
 
+#![allow(clippy::unwrap_used, reason = "tests may panic on a failed assertion")]
+
 use std::path::Path;
 
 use imgsmith::{

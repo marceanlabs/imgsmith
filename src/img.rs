@@ -9,6 +9,7 @@ use crate::error::Error;
 use crate::meta;
 use crate::ops::{self, CropSpec, Fit, Flip, Gravity};
 
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum Format {
     Png,
@@ -28,6 +29,7 @@ pub enum Format {
 }
 
 impl Format {
+    #[must_use]
     pub fn extension(self) -> &'static str {
         match self {
             Format::Png => "png",
@@ -48,6 +50,7 @@ impl Format {
     }
 
     /// The quality used when the caller does not set one.
+    #[must_use]
     pub fn default_quality(self) -> u8 {
         match self {
             Format::Avif => 80,
@@ -55,6 +58,7 @@ impl Format {
         }
     }
 
+    #[must_use]
     pub fn from_extension(ext: &str) -> Option<Format> {
         match ext.to_ascii_lowercase().as_str() {
             "png" => Some(Format::Png),
@@ -76,6 +80,13 @@ impl Format {
     }
 }
 
+// Callers build this with struct update syntax, e.g.
+// `Options { width: Some(1), ..Options::default() }`, which #[non_exhaustive] forbids from
+// outside the crate. Until 1.0, a new field as a minor bump is the cheaper trade.
+#[allow(
+    clippy::exhaustive_structs,
+    reason = "callers construct this with struct update syntax, which non_exhaustive forbids"
+)]
 #[derive(Clone, Debug)]
 pub struct Options {
     pub width: Option<u32>,
@@ -93,6 +104,7 @@ pub struct Options {
     pub max_pixels: u64,
 }
 
+#[non_exhaustive]
 #[derive(Debug)]
 pub struct Outcome {
     pub in_dims: (u32, u32),

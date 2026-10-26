@@ -1,6 +1,8 @@
 //! End-to-end tests against the real binary. Nothing here is mocked: every
 //! assertion runs `imgsmith` and reads the file it wrote.
 
+#![allow(clippy::unwrap_used, reason = "tests may panic on a failed assertion")]
+
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -74,7 +76,7 @@ fn add_exif_orientation(jpeg: &[u8], orientation: u16) -> Vec<u8> {
     let len = (payload.len() + 2) as u16;
     let mut out = Vec::with_capacity(jpeg.len() + payload.len() + 4);
     out.extend_from_slice(&jpeg[..2]);
-    out.extend_from_slice(&[0xFF, 0xE1]);
+    out.extend_from_slice(&[0xff, 0xe1]);
     out.extend_from_slice(&len.to_be_bytes());
     out.extend_from_slice(&payload);
     out.extend_from_slice(&jpeg[2..]);
@@ -92,7 +94,7 @@ fn jpeg_with_orientation(path: &Path, w: u32, h: u32, orientation: u16) {
 
 fn has_app1(path: &Path) -> bool {
     let data = std::fs::read(path).unwrap();
-    data.windows(2).any(|w| w == [0xFF, 0xE1])
+    data.windows(2).any(|w| w == [0xff, 0xe1])
 }
 
 #[test]
@@ -105,7 +107,7 @@ fn converts_png_to_jpeg() {
     let out = run(&[input.to_str().unwrap(), "-o", output.to_str().unwrap()]);
     assert!(out.status.success(), "{}", stderr(&out));
     assert_eq!(dims(&output), (320, 200));
-    assert_eq!(magic(&output)[..2], [0xFF, 0xD8], "not a JPEG");
+    assert_eq!(magic(&output)[..2], [0xff, 0xd8], "not a JPEG");
 }
 
 #[test]

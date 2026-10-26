@@ -8,6 +8,7 @@ use std::io::Read;
 use std::path::Path;
 
 /// EXIF orientation tag (1-8), if the file has one.
+#[must_use]
 pub fn exif_orientation(path: &Path) -> Option<u8> {
     let file = std::fs::File::open(path).ok()?;
     let mut reader = std::io::BufReader::new(file);
@@ -17,6 +18,7 @@ pub fn exif_orientation(path: &Path) -> Option<u8> {
 }
 
 /// Animated inputs are refused rather than silently flattened to frame one.
+#[must_use]
 pub fn animated_kind(path: &Path) -> Option<&'static str> {
     let mut file = std::fs::File::open(path).ok()?;
     let mut head = vec![0u8; 64 * 1024];
@@ -50,30 +52,31 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 /// orientation tag would then be wrong, so the whole EXIF block goes rather
 /// than being rewritten. ICC (APP2) survives either way, because a colour
 /// profile is independent of orientation.
+#[must_use]
 pub fn jpeg_app_segments(path: &Path, keep_exif: bool) -> Vec<Vec<u8>> {
     let Ok(data) = std::fs::read(path) else {
         return Vec::new();
     };
-    if !data.starts_with(&[0xFF, 0xD8]) {
+    if !data.starts_with(&[0xff, 0xd8]) {
         return Vec::new();
     }
     let mut out = Vec::new();
     let mut i = 2usize;
     while i + 4 <= data.len() {
-        if data[i] != 0xFF {
+        if data[i] != 0xff {
             break;
         }
         let marker = data[i + 1];
-        if marker == 0xFF {
+        if marker == 0xff {
             i += 1;
             continue;
         }
         // Standalone markers carry no length.
-        if marker == 0xD8 || marker == 0x01 || (0xD0..=0xD7).contains(&marker) {
+        if marker == 0xd8 || marker == 0x01 || (0xd0..=0xd7).contains(&marker) {
             i += 2;
             continue;
         }
-        if marker == 0xDA {
+        if marker == 0xda {
             break; // start of scan: no more headers
         }
         let len = u16::from_be_bytes([data[i + 2], data[i + 3]]) as usize;
@@ -81,9 +84,9 @@ pub fn jpeg_app_segments(path: &Path, keep_exif: bool) -> Vec<Vec<u8>> {
             break;
         }
         let keep = match marker {
-            0xE1 => keep_exif, // EXIF or XMP
-            0xE2 => true,      // ICC profile
-            0xED => keep_exif, // IPTC
+            0xe1 => keep_exif, // EXIF or XMP
+            0xe2 => true,      // ICC profile
+            0xed => keep_exif, // IPTC
             _ => false,
         };
         if keep {
@@ -96,7 +99,7 @@ pub fn jpeg_app_segments(path: &Path, keep_exif: bool) -> Vec<Vec<u8>> {
 
 /// Insert segments immediately after the SOI marker of an encoded JPEG.
 pub fn splice_jpeg(encoded: &[u8], segments: &[Vec<u8>]) -> Vec<u8> {
-    if segments.is_empty() || !encoded.starts_with(&[0xFF, 0xD8]) {
+    if segments.is_empty() || !encoded.starts_with(&[0xff, 0xd8]) {
         return encoded.to_vec();
     }
     let extra: usize = segments.iter().map(Vec::len).sum();
@@ -110,6 +113,7 @@ pub fn splice_jpeg(encoded: &[u8], segments: &[Vec<u8>]) -> Vec<u8> {
 }
 
 /// What a photo says about itself, in the words a person would use.
+#[non_exhaustive]
 #[derive(Debug, Default, PartialEq)]
 pub struct Tags {
     pub make: Option<String>,
@@ -128,12 +132,14 @@ pub struct Tags {
 }
 
 impl Tags {
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         *self == Tags::default()
     }
 }
 
 /// Read the tags of a file, or nothing when it carries none.
+#[must_use]
 pub fn read_tags(path: &Path) -> Option<Tags> {
     let file = std::fs::File::open(path).ok()?;
     let mut reader = std::io::BufReader::new(file);
@@ -235,6 +241,7 @@ fn signed(exif: &exif::Exif, ref_tag: exif::Tag, value: f64) -> f64 {
 /// The tokens are the strftime ones people already know, limited to the six that
 /// a date from a photograph needs. An unknown token is left alone rather than
 /// silently dropped, so a typo shows up in the name instead of disappearing.
+#[must_use]
 pub fn format_date(taken: &str, template: &str) -> Option<String> {
     let bytes = taken.as_bytes();
     // The tag holds 2026:03:01, and some readers hand it over already turned into
@@ -278,6 +285,7 @@ pub fn format_date(taken: &str, template: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, reason = "tests may panic on a failed assertion")]
     use super::*;
 
     #[test]
@@ -324,10 +332,10 @@ mod tests {
     #[test]
     fn segment_parse_stops_at_scan_and_keeps_what_it_should() {
         // SOI, APP1, APP0, SOS
-        let mut jpeg = vec![0xFF, 0xD8];
-        jpeg.extend_from_slice(&[0xFF, 0xE1, 0x00, 0x08, 1, 2, 3, 4, 5, 6]); // APP1 len 8
-        jpeg.extend_from_slice(&[0xFF, 0xE0, 0x00, 0x04, 9, 9]); // APP0 len 4
-        jpeg.extend_from_slice(&[0xFF, 0xDA, 0x00, 0x02]); // SOS
+        let mut jpeg = vec![0xff, 0xd8];
+        jpeg.extend_from_slice(&[0xff, 0xe1, 0x00, 0x08, 1, 2, 3, 4, 5, 6]); // APP1 len 8
+        jpeg.extend_from_slice(&[0xff, 0xe0, 0x00, 0x04, 9, 9]); // APP0 len 4
+        jpeg.extend_from_slice(&[0xff, 0xda, 0x00, 0x02]); // SOS
         jpeg.extend_from_slice(&[0x00, 0x11, 0x22]);
 
         let dir = std::env::temp_dir();
@@ -336,14 +344,14 @@ mod tests {
 
         let kept = jpeg_app_segments(&path, true);
         assert_eq!(kept.len(), 1, "only APP1 should be kept");
-        assert_eq!(kept[0][1], 0xE1);
+        assert_eq!(kept[0][1], 0xe1);
 
         let none = jpeg_app_segments(&path, false);
         assert!(none.is_empty(), "EXIF dropped when orientation consumed");
 
         let spliced = splice_jpeg(&jpeg, &kept);
-        assert_eq!(&spliced[..2], &[0xFF, 0xD8]);
-        assert_eq!(spliced[2..4], [0xFF, 0xE1]);
+        assert_eq!(&spliced[..2], &[0xff, 0xd8]);
+        assert_eq!(spliced[2..4], [0xff, 0xe1]);
         let _ = std::fs::remove_file(&path);
     }
 }
