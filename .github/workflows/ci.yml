@@ -3,6 +3,8 @@ name: ci
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "0 6 1 * *"
 
 jobs:
   test:
@@ -22,6 +24,11 @@ jobs:
       - run: cargo clippy --all-targets --no-default-features -- -D warnings
       - run: cargo test --all
       - run: cargo test --all --no-default-features
+      - name: A fresh lockfile still passes
+        if: github.event_name == 'schedule'
+        run: |
+          cargo update
+          cargo test --all
       - run: cargo build --release
 
       # The promise: the same input and flags produce the same bytes. Hashes are
