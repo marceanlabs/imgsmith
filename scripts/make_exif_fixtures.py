@@ -13,7 +13,7 @@ from pathlib import Path
 
 from PIL import Image
 
-FIX = Path("/root/work/imgtool/tests/fixtures")
+FIX = Path("/Users/adam/work/imgtool/tests/fixtures")
 
 ASCII, SHORT, LONG, RATIONAL = 2, 3, 4, 5
 

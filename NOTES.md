@@ -53,7 +53,7 @@ machine: `brew install marceanlabs/imgsmith/imgsmith`, then `brew test imgsmith`
 conversion through the installed binary. That is the whole path a Mac or Linux user
 takes.
 
-Benchmark scripts live in `/root/.hermes/cache/scratch/bench/` (`bench.sh`, `batch.sh`,
+Benchmark scripts live in `/Users/adam/.hermes/cache/scratch/bench/` (`bench.sh`, `batch.sh`,
 `real.sh`) and compare against ImageMagick 7.1.2 installed on this machine.
 
 ## Identity

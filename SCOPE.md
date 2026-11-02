@@ -120,7 +120,7 @@ Written before the work, so they can be checked without argument later.
 # First pass, 25 October 2026: choosing what to build
 
 Evidence gathered the same day, all figures measured or pulled from the source API in that
-session, not quoted from blogs. Directory: `/root/work/imgtool/`.
+session, not quoted from blogs. Directory: `/Users/adam/work/imgtool/`.
 
 ## Verdict
 

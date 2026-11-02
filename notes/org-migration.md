@@ -34,7 +34,7 @@ gh api -X POST repos/wlkr73/imgsmith/transfer -f new_owner=marcean-labs
 gh release view v0.1.1 --repo marcean-labs/imgsmith
 
 # 3. point the clone at the new home
-cd /root/work/imgtool && git remote set-url origin https://github.com/marcean-labs/imgsmith.git
+cd /Users/adam/work/imgtool && git remote set-url origin https://github.com/marcean-labs/imgsmith.git
 
 # 4. create the tap and push the prepared formula
 gh repo create marcean-labs/homebrew-imgsmith --public \
